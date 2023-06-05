@@ -58,25 +58,24 @@ private:
 	int pid_;
 };
 
-int main()
+
+std::string getMapsFilename(int pid)
 {
-	int pid = 0;
-	std::cin >> pid;
-	Tracer tracer{pid};
-
-
 	std::string maps_filename = "/proc/";
 	maps_filename += std::to_string(pid);
 	maps_filename += "/maps";
+	return maps_filename;
+}
 
-	std::ifstream maps_file{maps_filename};
+std::vector<Region> getRegions(int pid)
+{
+	std::ifstream maps_file{getMapsFilename(pid)};
 
 	if (!maps_file.is_open())
 	{
 		std::cout << "cannot open!" << std::endl;
+		return {};
 	}
-
-	std::vector<std::string> lines;
 
 	std::vector<Region> regions;
 
@@ -94,19 +93,23 @@ int main()
 			sstr >> spam;
 			sstr >> std::hex >> region.end;
 
-
-			std::cout << "region " << std::hex << region.begin << " " << region.end << std::endl;
-			//			lines.push_back(cur_line);
+			regions.push_back(region);
 		}
 	}
 
+	return regions;
+}
 
-	//	std::string maps;
-	//	{
-	//		std::ostringstream sstr;
-	//		sstr << maps_file.rdbuf();
-	//		maps = sstr.str();
-	//	}
+
+int main()
+{
+	int pid = 0;
+	std::cin >> pid;
+	Tracer tracer{pid};
+
+	std::vector<Region> regions = getRegions(pid);
+
+
 
 
 	auto print_regs = [](const Regs &regs) {
