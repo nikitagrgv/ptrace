@@ -37,6 +37,21 @@ struct Region
 };
 
 
+std::string checkError()
+{
+	std::string error_buf{};
+	error_buf.resize(200);
+	perror(error_buf.c_str());
+	return error_buf;
+}
+
+bool isSuccess()
+{
+	bool success = errno == 0;
+	errno = 0;
+	return success;
+}
+
 class Tracer
 {
 public:
@@ -44,12 +59,50 @@ public:
 		: pid_{pid}
 	{
 		auto ret = ptrace(PTRACE_ATTACH, pid, 0, 0);
-		assert(ret == 0);
+		assert(ret == 0 && "Cannot attach");
 	}
 
 	~Tracer()
 	{
-		ptrace(PTRACE_DETACH, pid_, 0, 0);
+		auto ret = ptrace(PTRACE_DETACH, pid_, 0, 0);
+		assert(ret == 0 && "Cannot detach");
+	}
+
+	bool readWord(size_t address, size_t &data)
+	{
+		errno = 0;
+		data = ptrace(PTRACE_PEEKDATA, pid_, address, 0);
+		return isSuccess();
+	}
+
+	std::vector<unsigned char> readData(size_t begin, size_t end)
+	{
+		std::vector<unsigned char> data;
+		data.reserve(end - begin);
+
+		for (size_t i = begin; i < end; i += 8)
+		{
+//			std::cout << i << " " << end << std::endl;
+
+
+			union Word
+			{
+				size_t word;
+				unsigned char bytes[8];
+			};
+
+			Word word{};
+			bool succ = readWord(i, word.word);
+//			if (succ) // TODO#
+			{
+				for (const unsigned char &byte : word.bytes)
+				{
+					data.push_back(byte);
+				}
+			}
+		}
+
+		return data;
 	}
 
 	int getPid() const { return pid_; }
@@ -101,13 +154,6 @@ std::vector<Region> getRegions(int pid)
 }
 
 
-std::string check()
-{
-	std::string error_buf{};
-	error_buf.resize(200);
-	perror(error_buf.c_str());
-	return error_buf;
-}
 
 
 int main()
@@ -118,11 +164,35 @@ int main()
 
 	std::vector<Region> regions = getRegions(pid);
 
-	std::cout << check();
+	auto data = tracer.readData(regions[1].begin, regions[1].end);
 
-	ptrace(PTRACE_PEEKDATA, pid, 0x0, 0);
+	std::cout << std::hex;
+	size_t cur = regions[1].begin;
+	for (const auto &byte : data)
+	{
+		if (cur % (8 * 4) == 0)
+		{
+			std::cout << std::endl << cur << ": ";
+		}
+		cur += 8;
 
-	std::cout << check();
+		std::cout.width(2);
+		std::cout << (int)byte;
+	}
+
+	//	for (size_t i = regions[1].begin; i < regions[1].end; i += 64)
+//	{
+//		size_t data;
+//		bool succ = tracer.readWord(i, data);
+//		if (succ)
+//		{
+//			std::cout << std::hex << i << ": " << std::hex << data << std::endl;
+//		}
+//		else
+//		{
+//			std::cout << std::hex << i << ": error" << std::endl;
+//		}
+//	}
 
 //	ptrace(PTRACE_PEEKDATA, )
 
