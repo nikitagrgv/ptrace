@@ -101,6 +101,15 @@ std::vector<Region> getRegions(int pid)
 }
 
 
+std::string check()
+{
+	std::string error_buf{};
+	error_buf.resize(200);
+	perror(error_buf.c_str());
+	return error_buf;
+}
+
+
 int main()
 {
 	int pid = 0;
@@ -109,11 +118,14 @@ int main()
 
 	std::vector<Region> regions = getRegions(pid);
 
+	std::cout << check();
 
-	for (const auto &region : regions)
-	{
-		std::cout << "region " << region.begin << " " << region.end << std::endl;
-	}
+	ptrace(PTRACE_PEEKDATA, pid, 0x0, 0);
+
+	std::cout << check();
+
+//	ptrace(PTRACE_PEEKDATA, )
+
 
 
 	auto print_regs = [](const Regs &regs) {
