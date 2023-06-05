@@ -75,6 +75,13 @@ public:
 		return isSuccess();
 	}
 
+	bool writeWord(size_t address, size_t data)
+	{
+		errno = 0;
+		ptrace(PTRACE_POKEDATA, pid_, address, data);
+		return isSuccess();
+	}
+
 	std::vector<unsigned char> readData(size_t begin, size_t end)
 	{
 		std::vector<unsigned char> data;
@@ -82,9 +89,6 @@ public:
 
 		for (size_t i = begin; i < end; i += 8)
 		{
-//			std::cout << i << " " << end << std::endl;
-
-
 			union Word
 			{
 				size_t word;
@@ -162,23 +166,30 @@ int main()
 	std::cin >> pid;
 	Tracer tracer{pid};
 
-	std::vector<Region> regions = getRegions(pid);
-
-	auto data = tracer.readData(regions[1].begin, regions[1].end);
-
-	std::cout << std::hex;
-	size_t cur = regions[1].begin;
-	for (const auto &byte : data)
-	{
-		if (cur % (8 * 4) == 0)
+	auto aboba = [&tracer](Region region){
+		auto data = tracer.readData(region.begin, region.end);
+		std::cout << std::hex;
+		size_t cur = region.begin;
+		for (const auto &byte : data)
 		{
-			std::cout << std::endl << cur << ": ";
-		}
-		cur += 8;
+			if (byte == 123)
+			{
+				size_t addr_123 = cur;
 
-		std::cout.width(2);
-		std::cout << (int)byte;
+				std::cout << "found = " << cur << std::endl;
+				bool ret = tracer.writeWord(addr_123, 456);
+				std::cout << "succ: " << ret << std::endl;
+			}
+			cur += 1;
+		}
+	};
+
+	std::vector<Region> regions = getRegions(pid);
+	for (const auto &region : regions)
+	{
+		aboba(region);
 	}
+
 
 	//	for (size_t i = regions[1].begin; i < regions[1].end; i += 64)
 //	{
