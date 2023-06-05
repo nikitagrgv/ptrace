@@ -110,6 +110,10 @@ int main()
 	std::vector<Region> regions = getRegions(pid);
 
 
+	for (const auto &region : regions)
+	{
+		std::cout << "region " << region.begin << " " << region.end << std::endl;
+	}
 
 
 	auto print_regs = [](const Regs &regs) {
