@@ -37,23 +37,29 @@ public:
 	int rowCount(const QModelIndex &parent) const override
 	{
 		const double data_size = double(provider_->maxAddress() - provider_->minAddress() + 1);
-		const double column_count = (double)columnCount(QModelIndex{});
+		const double column_count = (double)columnCount({});
 		return std::ceil(data_size / column_count);
 	}
 
 	int columnCount(const QModelIndex &parent) const override
 	{
-		return 16;
+		return 16 + show_ascii_;
 	}
 
 	QVariant data(const QModelIndex &index, int role) const override
 	{
 		if (role == Qt::DisplayRole)
 		{
+			if (is_ascii_info_index(index))
+			{
+				return get_ascii_from_row(index.row());
+			}
+
 			const size_t addr = index_to_address(index);
 			if (is_valid_addr(addr))
 			{
-				return to_hex(addr, HexMode::Without0x, 2);
+				const size_t value = get_value_by_addr(addr);
+				return to_hex(value, HexMode::Without0x, 2);
 			}
 			else
 			{
@@ -62,6 +68,11 @@ public:
 		}
 		else if (role == Qt::ToolTipRole)
 		{
+			if (is_ascii_info_index(index))
+			{
+				return {};
+			}
+
 			const size_t addr = index_to_address(index);
 			return to_hex(addr, HexMode::Without0x, 16);
 		}
@@ -77,11 +88,15 @@ public:
 			{
 				const QModelIndex index = createIndex(section, 0);
 				const size_t addr = index_to_address(index);
-				const size_t value = get_value_by_addr(addr);
-				return to_hex(value, HexMode::With0x, 16);
+				return to_hex(addr, HexMode::With0x, 16);
 			}
 			else
 			{
+				if (is_ascii_info_index(createIndex(0, section)))
+				{
+					return "ASCII";
+				}
+
 				return to_hex((get_first_cell_addr() + section) % 16, HexMode::Without0x);
 			}
 		}
@@ -95,6 +110,33 @@ private:
 		With0x,
 		Without0x
 	};
+
+	QString get_ascii_from_row(int row) const
+	{
+		QString ascii{};
+		QModelIndex index = createIndex(row, 0);
+		size_t begin = index_to_address(index);
+		size_t end = begin + columnCount({}) - show_ascii_;
+		for (size_t addr = begin; addr < end; ++addr)
+		{
+			if (!is_valid_addr(addr))
+			{
+				ascii.append(' ');
+				continue;
+			}
+
+			const unsigned char ch = (unsigned char)get_value_by_addr(addr);
+			if (std::isprint(ch))
+			{
+				ascii.append(ch);
+			}
+			else
+			{
+				ascii.append('.');
+			}
+		}
+		return ascii;
+	}
 
 	size_t get_value_by_addr(size_t addr) const { return provider_->getData(addr); }
 
@@ -119,7 +161,7 @@ private:
 	{
 		const int row = index.row();
 		const int column = index.column();
-		return get_first_cell_addr() + row * columnCount(QModelIndex{}) + column;
+		return get_first_cell_addr() + row * columnCount({}) + column;
 	}
 
 	size_t get_first_cell_addr() const
@@ -127,8 +169,14 @@ private:
 		return size_t(std::floor((double)provider_->minAddress() / 16.) * 16.);
 	}
 
+	bool is_ascii_info_index(const QModelIndex &index) const
+	{
+		return show_ascii_ && index.column() == columnCount({}) - 1;
+	}
+
 private:
 	DataProvider *provider_{};
+	bool show_ascii_ = true;
 };
 
 
@@ -158,7 +206,7 @@ public:
 		class TestDataProvider : public DataProvider
 		{
 		public:
-			size_t getData(size_t addr) const override { return addr; }
+			size_t getData(size_t addr) const override { return addr % 0x100; }
 			size_t minAddress() const override { return 0x1000 + 5; }
 			size_t maxAddress() const override { return 0x2000 - 2; }
 		};
