@@ -15,7 +15,7 @@ using Regs = user_regs_struct;
 
 constexpr int REGS_COUNT = sizeof(Regs) / sizeof(unsigned long long int);
 
-const char *regName(int n)
+inline const char *regName(int n)
 {
 	static const char *names[] = {"r15", "r14", "r13", "r12", "rbp", "rbx", "r11", "r10", "r9",
 		"r8", "rax", "rcx", "rdx", "rsi", "rdi", "orig_rax", "rip", "cs", "eflags", "rsp", "ss",
@@ -39,7 +39,7 @@ struct Region
 };
 
 
-std::string checkError()
+inline std::string checkError()
 {
 	std::string error_buf{};
 	error_buf.resize(200);
@@ -47,7 +47,7 @@ std::string checkError()
 	return error_buf;
 }
 
-bool isSuccess()
+inline bool isSuccess()
 {
 	bool success = errno == 0;
 	errno = 0;
@@ -118,7 +118,7 @@ private:
 };
 
 
-std::string getMapsFilename(int pid)
+inline std::string getMapsFilename(int pid)
 {
 	std::string maps_filename = "/proc/";
 	maps_filename += std::to_string(pid);
@@ -126,7 +126,7 @@ std::string getMapsFilename(int pid)
 	return maps_filename;
 }
 
-std::vector<Region> getRegions(int pid)
+inline std::vector<Region> getRegions(int pid)
 {
 	std::ifstream maps_file{getMapsFilename(pid)};
 

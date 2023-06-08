@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Tracer.h"
+
 #include <QAbstractTableModel>
 #include <QFontDatabase>
 #include <QHeaderView>
@@ -8,12 +10,26 @@
 #include <QTableView>
 #include <QVBoxLayout>
 
+#include <memory>
+
+class DataProvider
+{
+public:
+	virtual ~DataProvider() = default;
+
+	virtual size_t getData(size_t addr) = 0;
+};
+
+
 class TracerModel : public QAbstractTableModel
 {
 public:
-	TracerModel(QObject *parent = nullptr)
+	TracerModel(DataProvider *provider, QObject *parent = nullptr)
 		: QAbstractTableModel(parent)
-	{}
+		, provider_(provider)
+	{
+		assert(provider_);
+	}
 
 	int rowCount(const QModelIndex &parent = QModelIndex()) const override
 	{
@@ -64,10 +80,7 @@ private:
 		Without0x
 	};
 
-	size_t get_value_by_addr(size_t addr) const
-	{
-		return addr;
-	}
+	size_t get_value_by_addr(size_t addr) const { return provider_->getData(addr); }
 
 	QString to_hex(size_t number, HexMode hex_mode, int min_length = 0) const
 	{
@@ -87,6 +100,9 @@ private:
 		const int column = index.column();
 		return row * columnCount() + column;
 	}
+
+private:
+	DataProvider *provider_{};
 };
 
 
@@ -113,11 +129,19 @@ public:
 		layout()->addWidget(view_);
 
 
-		model_ = new TracerModel(this);
+		class TestDataProvider : public DataProvider
+		{
+		public:
+			size_t getData(size_t addr) override { return addr; }
+		};
+		provider_ = std::make_unique<TestDataProvider>();
+
+		model_ = new TracerModel(provider_.get(), this);
 		view_->setModel(model_);
 	}
 
 private:
+	std::unique_ptr<DataProvider> provider_;
 	TracerModel *model_{};
 	QTableView *view_{};
 };
