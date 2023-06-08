@@ -11,7 +11,7 @@ find_package(Qt5 COMPONENTS
         Widgets
         REQUIRED)
 
-add_executable(tracer main.cpp)
+add_executable(tracer main.cpp MainWindow.cpp MainWindow.h Tracer.cpp Tracer.h)
 
 target_link_libraries(tracer
         Qt5::Core
