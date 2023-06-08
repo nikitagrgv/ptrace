@@ -17,43 +17,54 @@ class DataProvider
 public:
 	virtual ~DataProvider() = default;
 
-	virtual size_t getData(size_t addr) = 0;
+	virtual size_t getData(size_t addr) const = 0;
+	virtual size_t minAddress() const = 0;
+	virtual size_t maxAddress() const = 0;
 };
 
 
 class TracerModel : public QAbstractTableModel
 {
 public:
-	TracerModel(DataProvider *provider, QObject *parent = nullptr)
+	explicit TracerModel(DataProvider *provider, QObject *parent = nullptr)
 		: QAbstractTableModel(parent)
 		, provider_(provider)
 	{
 		assert(provider_);
 	}
 
-	int rowCount(const QModelIndex &parent = QModelIndex()) const override
+	int rowCount(const QModelIndex &parent) const override
 	{
-		return 14;
-		;
+		return 400;
 	}
-	int columnCount(const QModelIndex &parent = QModelIndex()) const override
+	int columnCount(const QModelIndex &parent) const override
 	{
 		return 16;
-		;
 	}
-	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override
+	QVariant data(const QModelIndex &index, int role) const override
 	{
 		if (role == Qt::DisplayRole)
 		{
 			const size_t addr = index_to_address(index);
-			return to_hex(addr, HexMode::Without0x, 2);
+			if (is_valid_addr(addr))
+			{
+				return to_hex(addr, HexMode::Without0x, 2);
+			}
+			else
+			{
+				return QString("--");
+			}
+		}
+		else if (role == Qt::ToolTipRole)
+		{
+			const size_t addr = index_to_address(index);
+			return to_hex(addr, HexMode::Without0x, 16);
 		}
 
 		return {};
 	}
 
-	QVariant headerData(int section, Qt::Orientation orientation,
-		int role = Qt::DisplayRole) const override
+	QVariant headerData(int section, Qt::Orientation orientation, int role) const override
 	{
 		if (role == Qt::DisplayRole)
 		{
@@ -82,6 +93,11 @@ private:
 
 	size_t get_value_by_addr(size_t addr) const { return provider_->getData(addr); }
 
+	bool is_valid_addr(size_t addr) const
+	{
+		return addr <= provider_->maxAddress() && addr >= provider_->minAddress();
+	}
+
 	QString to_hex(size_t number, HexMode hex_mode, int min_length = 0) const
 	{
 		// TODO: shitty
@@ -98,7 +114,7 @@ private:
 	{
 		const int row = index.row();
 		const int column = index.column();
-		return row * columnCount() + column;
+		return row * columnCount(QModelIndex{}) + column;
 	}
 
 private:
@@ -132,7 +148,9 @@ public:
 		class TestDataProvider : public DataProvider
 		{
 		public:
-			size_t getData(size_t addr) override { return addr; }
+			size_t getData(size_t addr) const override { return addr; }
+			size_t maxAddress() const override { return 0x200; }
+			size_t minAddress() const override { return 0x100; }
 		};
 		provider_ = std::make_unique<TestDataProvider>();
 
