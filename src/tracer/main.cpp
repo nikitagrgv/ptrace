@@ -9,6 +9,9 @@
 #include <sstream>
 #include <vector>
 
+#include <QApplication>
+#include <QPushButton>
+
 using Regs = user_regs_struct;
 
 constexpr int REGS_COUNT = sizeof(Regs) / sizeof(unsigned long long int);
@@ -160,8 +163,17 @@ std::vector<Region> getRegions(int pid)
 
 
 
-int main()
+int main(int argc, char *argv[])
 {
+	QApplication a(argc, argv);
+	QPushButton button("Hello world!", nullptr);
+	button.resize(200, 100);
+	button.show();
+	return QApplication::exec();
+
+
+
+
 	int pid = 0;
 	std::cin >> pid;
 	Tracer tracer{pid};
