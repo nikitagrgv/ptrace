@@ -10,6 +10,7 @@
 #include <QTableView>
 #include <QVBoxLayout>
 
+#include <cmath>
 #include <memory>
 
 class DataProvider
@@ -35,12 +36,16 @@ public:
 
 	int rowCount(const QModelIndex &parent) const override
 	{
-		return 400;
+		const double data_size = double(provider_->maxAddress() - provider_->minAddress() + 1);
+		const double column_count = (double)columnCount(QModelIndex{});
+		return std::ceil(data_size / column_count);
 	}
+
 	int columnCount(const QModelIndex &parent) const override
 	{
 		return 16;
 	}
+
 	QVariant data(const QModelIndex &index, int role) const override
 	{
 		if (role == Qt::DisplayRole)
@@ -77,7 +82,7 @@ public:
 			}
 			else
 			{
-				return to_hex(section, HexMode::Without0x);
+				return to_hex((get_first_cell_addr() + section) % 16, HexMode::Without0x);
 			}
 		}
 
@@ -114,7 +119,12 @@ private:
 	{
 		const int row = index.row();
 		const int column = index.column();
-		return row * columnCount(QModelIndex{}) + column;
+		return get_first_cell_addr() + row * columnCount(QModelIndex{}) + column;
+	}
+
+	size_t get_first_cell_addr() const
+	{
+		return size_t(std::floor((double)provider_->minAddress() / 16.) * 16.);
 	}
 
 private:
@@ -149,8 +159,8 @@ public:
 		{
 		public:
 			size_t getData(size_t addr) const override { return addr; }
-			size_t maxAddress() const override { return 0x200; }
-			size_t minAddress() const override { return 0x100; }
+			size_t minAddress() const override { return 0x1000 + 5; }
+			size_t maxAddress() const override { return 0x2000 - 2; }
 		};
 		provider_ = std::make_unique<TestDataProvider>();
 
