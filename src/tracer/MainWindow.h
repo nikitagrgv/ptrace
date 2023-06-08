@@ -30,7 +30,7 @@ public:
 		if (role == Qt::DisplayRole)
 		{
 			const size_t addr = index_to_address(index);
-			return to_hex(addr, HexMode::Without0x);
+			return to_hex(addr, HexMode::Without0x, 2);
 		}
 
 		return {};
@@ -45,12 +45,12 @@ public:
 			{
 				const QModelIndex index = createIndex(section, 0);
 				const size_t addr = index_to_address(index);
-				return to_hex(addr, HexMode::With0x, 16);
+				const size_t value = get_value_by_addr(addr);
+				return to_hex(value, HexMode::With0x, 16);
 			}
 			else
 			{
-				const size_t offset = section;
-				return to_hex(offset, HexMode::Without0x);
+				return to_hex(section, HexMode::Without0x);
 			}
 		}
 
@@ -63,6 +63,11 @@ private:
 		With0x,
 		Without0x
 	};
+
+	size_t get_value_by_addr(size_t addr) const
+	{
+		return addr;
+	}
 
 	QString to_hex(size_t number, HexMode hex_mode, int min_length = 0) const
 	{
