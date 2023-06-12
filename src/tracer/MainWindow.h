@@ -24,19 +24,29 @@ public:
 };
 
 
+class DataChooser
+{
+public:
+	virtual ~DataChooser() = default;
+
+	virtual size_t minAddress() const = 0;
+	virtual size_t maxAddress() const = 0;
+};
+
 class TracerModel : public QAbstractTableModel
 {
 public:
-	explicit TracerModel(DataProvider *provider, QObject *parent = nullptr)
+	explicit TracerModel(DataProvider *provider, DataChooser *chooser, QObject *parent = nullptr)
 		: QAbstractTableModel(parent)
 		, provider_(provider)
+		, chooser_(chooser)
 	{
 		assert(provider_);
 	}
 
 	int rowCount(const QModelIndex &parent) const override
 	{
-		const double data_size = double(provider_->maxAddress() - provider_->minAddress() + 1);
+		const double data_size = double(chooser_->maxAddress() - chooser_->minAddress() + 1);
 		const double column_count = (double)columnCount({});
 		return std::ceil(data_size / column_count);
 	}
@@ -166,7 +176,7 @@ private:
 
 	size_t get_first_cell_addr() const
 	{
-		return size_t(std::floor((double)provider_->minAddress() / 16.) * 16.);
+		return size_t(std::floor((double)chooser_->minAddress() / 16.) * 16.);
 	}
 
 	bool is_ascii_info_index(const QModelIndex &index) const
@@ -175,6 +185,7 @@ private:
 	}
 
 private:
+	DataChooser *chooser_{};
 	DataProvider *provider_{};
 	bool show_ascii_ = true;
 };
@@ -186,10 +197,7 @@ public:
 	TracerWidget(QWidget *parent = nullptr)
 		: QWidget(parent)
 	{
-
-
 		new QVBoxLayout{this};
-
 
 		auto button = new QPushButton("Hello world!", this);
 		layout()->addWidget(button);
@@ -212,12 +220,21 @@ public:
 		};
 		provider_ = std::make_unique<TestDataProvider>();
 
-		model_ = new TracerModel(provider_.get(), this);
+		class TestDataChooser : public DataChooser
+		{
+		public:
+			size_t minAddress() const override { return 0x2000 - 400; }
+			size_t maxAddress() const override { return 0x2000 + 10; }
+		};
+		chooser_ = std::make_unique<TestDataChooser>();
+
+		model_ = new TracerModel(provider_.get(), chooser_.get(), this);
 		view_->setModel(model_);
 	}
 
 private:
 	std::unique_ptr<DataProvider> provider_;
+	std::unique_ptr<DataChooser> chooser_;
 	TracerModel *model_{};
 	QTableView *view_{};
 };
