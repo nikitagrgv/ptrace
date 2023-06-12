@@ -36,6 +36,9 @@ bool isSuccess();
 class Tracer
 {
 public:
+	Tracer(Tracer&&) = delete;
+	Tracer(const Tracer&) = delete;
+
 	Tracer(int pid);
 	~Tracer();
 

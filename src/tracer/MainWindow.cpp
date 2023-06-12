@@ -18,7 +18,7 @@ TracerWidget::TracerWidget(QWidget *parent)
 	connect(process_selector_, &ProcessSelector::pidSelected, this, [this](int pid) {
 		std::cout << "rel pr : " << regions_provider_ << std::endl;
 		static_cast<TestRegionsProvider*>(regions_provider_)->reload(pid);
-		//		create_model(pid);
+		create_model(pid);
 	});
 
 	address_selector_ = new AddressSelector(std::move(regions_provider), this);
@@ -39,14 +39,30 @@ TracerWidget::TracerWidget(QWidget *parent)
 
 void TracerWidget::create_model(int pid)
 {
+	tracer_ = std::make_unique<Tracer>(pid);
+
 	class TestDataProvider : public DataProvider
 	{
 	public:
-		size_t getData(size_t addr) const override { return addr % 0x100; }
-		size_t getMinAddress() const override { return 0x1000 + 5; }
-		size_t getMaxAddress() const override { return 0x2000 - 2; }
+		TestDataProvider(Tracer *tracer)
+			: tracer_(tracer)
+		{}
+
+		size_t getData(size_t addr) const override
+		{
+			size_t data = 0x00;
+			tracer_->readWord(addr, data);
+			const int byte_num = addr % 8;
+			addr >> 8 * byte_num;
+			return data & 0xFF;
+		}
+		size_t getMinAddress() const override { return 0x0; }
+		size_t getMaxAddress() const override { return -1; }
+
+	private:
+		Tracer *tracer_{};
 	};
-	auto provider = std::make_unique<TestDataProvider>();
+	auto provider = std::make_unique<TestDataProvider>(tracer_.get());
 
 	class TestDataChooser : public DataChooser
 	{

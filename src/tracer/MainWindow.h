@@ -35,6 +35,7 @@ private:
 	RegionsProvider *regions_provider_{};
 
 	std::unique_ptr<HexTableModel> model_;
+	std::unique_ptr<Tracer> tracer_;
 	QTableView *view_{};
 };
 

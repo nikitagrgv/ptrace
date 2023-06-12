@@ -10,9 +10,14 @@ int main()
 
 	volatile auto some_var = new volatile size_t{123};
 
+	std::string str1
+		= "bobabaobaobjoarbobabaobaobjoarbobabaobaobjoarbobabaobaobjoarbobabaobaobjoar";
+
 	while (true)
 	{
-		std::cout << addr << " | " << ++cur << " | " << *some_var << std::endl;
+		const char str2[] = "fffffffffffbxcbbxsbsbsbfffffaaaaaaaaaaasfafaf";
+
+		std::cout << addr << " | " << ++cur << " | " << *some_var << " " << str1[0] << str2[0] << std::endl;
 		volatile long int counter = 0xfffffff;
 		while (--counter)
 		{}
