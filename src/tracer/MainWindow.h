@@ -13,45 +13,86 @@
 #include <cmath>
 #include <memory>
 
-class DataProvider
+class DataProvider : public QObject
 {
+	Q_OBJECT
+
 public:
 	virtual ~DataProvider() = default;
 
 	virtual size_t getData(size_t addr) const = 0;
-	virtual size_t minAddress() const = 0;
-	virtual size_t maxAddress() const = 0;
+	virtual size_t getMinAddress() const = 0;
+	virtual size_t getMaxAddress() const = 0;
+
+signals:
+	void dataChanged(size_t addr);
+	void minAddressChanged(size_t min);
+	void maxAddressChanged(size_t max);
 };
 
 
-class DataChooser
+class DataChooser : public QObject
 {
+	Q_OBJECT
+
 public:
 	virtual ~DataChooser() = default;
 
-	virtual size_t minAddress() const = 0;
-	virtual size_t maxAddress() const = 0;
+	virtual size_t getMinAddress() const = 0;
+	virtual size_t getMaxAddress() const = 0;
+
+signals:
+	void minAddressChanged(size_t min);
+	void maxAddressChanged(size_t max);
 };
 
 class TracerModel : public QAbstractTableModel
 {
 public:
-	explicit TracerModel(DataProvider *provider, DataChooser *chooser, QObject *parent = nullptr)
+	explicit TracerModel(std::unique_ptr<DataProvider> provider,
+		std::unique_ptr<DataChooser> chooser, QObject *parent = nullptr)
 		: QAbstractTableModel(parent)
-		, provider_(provider)
-		, chooser_(chooser)
+		, provider_(std::move(provider))
+		, chooser_(std::move(chooser))
 	{
 		assert(provider_);
+		assert(chooser_);
+
+		auto update_all = [this]() {
+			QModelIndex top_left = index(0, 0);
+			QModelIndex bottom_right = index(rowCount(), columnCount());
+			emit dataChanged(top_left, bottom_right);
+			emit headerDataChanged(Qt::Vertical, top_left.column(), bottom_right.column());
+			emit headerDataChanged(Qt::Horizontal, top_left.row(), bottom_right.row());
+		};
+
+		auto update_data = [=](size_t addr) {
+			// TODO
+			update_all();
+		};
+
+		connect(provider_.get(), &DataProvider::dataChanged, this, update_data);
+		connect(provider_.get(), &DataProvider::maxAddressChanged, this, update_all);
+		connect(provider_.get(), &DataProvider::minAddressChanged, this, update_all);
+
+		connect(chooser_.get(), &DataChooser::maxAddressChanged, this, update_all);
+		connect(chooser_.get(), &DataChooser::minAddressChanged, this, update_all);
 	}
 
-	int rowCount(const QModelIndex &parent) const override
+	DataProvider &getDataProvider() { return *provider_; }
+	DataProvider &getDataProvider() const { return *provider_; }
+
+	DataChooser &getDataChooser() { return *chooser_; }
+	DataChooser &getDataChooser() const { return *chooser_; }
+
+	int rowCount(const QModelIndex &parent = QModelIndex{}) const override
 	{
-		const double data_size = double(chooser_->maxAddress() - chooser_->minAddress() + 1);
+		const double data_size = double(chooser_->getMaxAddress() - chooser_->getMinAddress() + 1);
 		const double column_count = (double)columnCount({});
 		return std::ceil(data_size / column_count);
 	}
 
-	int columnCount(const QModelIndex &parent) const override
+	int columnCount(const QModelIndex &parent = QModelIndex{}) const override
 	{
 		return 16 + show_ascii_;
 	}
@@ -152,7 +193,7 @@ private:
 
 	bool is_valid_addr(size_t addr) const
 	{
-		return addr <= provider_->maxAddress() && addr >= provider_->minAddress();
+		return addr <= provider_->getMaxAddress() && addr >= provider_->getMinAddress();
 	}
 
 	QString to_hex(size_t number, HexMode hex_mode, int min_length = 0) const
@@ -176,7 +217,7 @@ private:
 
 	size_t get_first_cell_addr() const
 	{
-		return size_t(std::floor((double)chooser_->minAddress() / 16.) * 16.);
+		return size_t(std::floor((double)chooser_->getMinAddress() / 16.) * 16.);
 	}
 
 	bool is_ascii_info_index(const QModelIndex &index) const
@@ -185,8 +226,8 @@ private:
 	}
 
 private:
-	DataChooser *chooser_{};
-	DataProvider *provider_{};
+	std::unique_ptr<DataChooser> chooser_{};
+	std::unique_ptr<DataProvider> provider_{};
 	bool show_ascii_ = true;
 };
 
@@ -215,26 +256,48 @@ public:
 		{
 		public:
 			size_t getData(size_t addr) const override { return addr % 0x100; }
-			size_t minAddress() const override { return 0x1000 + 5; }
-			size_t maxAddress() const override { return 0x2000 - 2; }
+			size_t getMinAddress() const override { return 0x1000 + 5; }
+			size_t getMaxAddress() const override { return 0x2000 - 2; }
 		};
-		provider_ = std::make_unique<TestDataProvider>();
+		auto provider = std::make_unique<TestDataProvider>();
 
 		class TestDataChooser : public DataChooser
 		{
 		public:
-			size_t minAddress() const override { return 0x2000 - 400; }
-			size_t maxAddress() const override { return 0x2000 + 10; }
-		};
-		chooser_ = std::make_unique<TestDataChooser>();
+			size_t getMinAddress() const override { return min_; }
+			size_t getMaxAddress() const override { return max_; }
 
-		model_ = new TracerModel(provider_.get(), chooser_.get(), this);
+			void setMinAddress(size_t min)
+			{
+				min_ = min;
+				emit minAddressChanged(min);
+			}
+			void setMaxAddress(size_t max)
+			{
+				max_ = max;
+				emit maxAddressChanged(max);
+			}
+
+		private:
+			size_t min_{0x2000 - 400};
+			size_t max_{0x2000 + 10};
+		};
+		auto chooser = std::make_unique<TestDataChooser>();
+
+		model_ = new TracerModel(std::move(provider), std::move(chooser), this);
 		view_->setModel(model_);
+
+
+		connect(button, &QPushButton::clicked, this, [this]() {
+			auto &chooser = static_cast<TestDataChooser &>(model_->getDataChooser());
+			auto &provider = static_cast<TestDataProvider &>(model_->getDataProvider());
+
+			chooser.setMaxAddress(chooser.getMaxAddress() + 23);
+			chooser.setMinAddress(chooser.getMinAddress() - 15);
+		});
 	}
 
 private:
-	std::unique_ptr<DataProvider> provider_;
-	std::unique_ptr<DataChooser> chooser_;
 	TracerModel *model_{};
 	QTableView *view_{};
 };
