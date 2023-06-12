@@ -4,6 +4,8 @@
 #include <sys/user.h>
 #include <unistd.h>
 
+#include <QString>
+
 #include <cassert>
 #include <fstream>
 #include <iostream>
@@ -28,7 +30,7 @@ struct Region
 	size_t end{};
 };
 
-inline std::string checkError();
+inline QString checkError();
 inline bool isSuccess();
 
 class Tracer
@@ -40,7 +42,7 @@ public:
 	bool readWord(size_t address, size_t &data);
 	bool writeWord(size_t address, size_t data);
 
-	std::vector<unsigned char> readData(size_t begin, size_t end);
+	QList<unsigned char> readData(size_t begin, size_t end);
 
 	int getPid() const { return pid_; }
 
@@ -49,6 +51,6 @@ private:
 };
 
 
-inline std::string getMapsFilename(int pid);
+inline QString getMapsFilename(int pid);
 
-inline std::vector<Region> getRegions(int pid);
+inline QList<Region> getRegions(int pid);

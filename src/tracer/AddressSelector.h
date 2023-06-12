@@ -2,6 +2,8 @@
 
 #include <QWidget>
 
+#include <memory>
+
 class QLineEdit;
 class QListView;
 
@@ -25,7 +27,7 @@ class AddressSelector : public QWidget
 	Q_OBJECT
 
 public:
-	AddressSelector(QWidget *parent = nullptr);
+	AddressSelector(std::unique_ptr<RegionsProvider> provider, QWidget *parent = nullptr);
 
 	size_t getMinAddress() const;
 	size_t getMaxAddress() const;

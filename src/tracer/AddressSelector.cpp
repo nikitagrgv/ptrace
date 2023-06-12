@@ -71,7 +71,7 @@ private:
 	std::unique_ptr<RegionsProvider> provider_;
 };
 
-AddressSelector::AddressSelector(QWidget *parent)
+AddressSelector::AddressSelector(std::unique_ptr<RegionsProvider> provider, QWidget *parent)
 	: QWidget(parent)
 {
 	auto layout = new QHBoxLayout(this);
@@ -80,19 +80,6 @@ AddressSelector::AddressSelector(QWidget *parent)
 		layout->addWidget(list_view_);
 		list_view_->setSizePolicy(QSizePolicy::Policy::MinimumExpanding,
 			QSizePolicy::Policy::MinimumExpanding);
-
-		class TestRegionsProvider : public RegionsProvider
-		{
-		public:
-			TestRegionsProvider(QObject *parent = nullptr)
-				: RegionsProvider(parent)
-			{}
-
-			int getRegionsCount() const override { return 6; }
-			size_t getRegionBegin(int region) const override { return region * 0x1000; }
-			size_t getRegionEnd(int region) const override { return region * 0x1000 + 0x555; }
-		};
-		auto provider = std::make_unique<TestRegionsProvider>();
 
 		auto model = new AddressListModel(std::move(provider), this);
 		list_view_->setModel(model);
