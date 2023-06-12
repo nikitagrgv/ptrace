@@ -7,10 +7,10 @@
 class DataChooser;
 class DataProvider;
 
-class TracerModel : public QAbstractTableModel
+class HexTableModel : public QAbstractTableModel
 {
 public:
-	explicit TracerModel(std::unique_ptr<DataProvider> provider,
+	explicit HexTableModel(std::unique_ptr<DataProvider> provider,
 		std::unique_ptr<DataChooser> chooser, QObject *parent = nullptr);
 
 	DataProvider &getDataProvider() { return *provider_; }

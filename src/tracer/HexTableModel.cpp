@@ -1,4 +1,4 @@
-#include "TracerModel.h"
+#include "HexTableModel.h"
 
 #include "DataChooser.h"
 #include "DataProvider.h"
@@ -6,7 +6,7 @@
 
 #include <cmath>
 
-TracerModel::TracerModel(std::unique_ptr<DataProvider> provider,
+HexTableModel::HexTableModel(std::unique_ptr<DataProvider> provider,
 	std::unique_ptr<DataChooser> chooser, QObject *parent)
 	: QAbstractTableModel(parent)
 	, provider_(std::move(provider))
@@ -36,19 +36,19 @@ TracerModel::TracerModel(std::unique_ptr<DataProvider> provider,
 	connect(chooser_.get(), &DataChooser::minAddressChanged, this, update_all);
 }
 
-int TracerModel::rowCount(const QModelIndex &parent) const
+int HexTableModel::rowCount(const QModelIndex &parent) const
 {
 	const double data_size = double(chooser_->getMaxAddress() - chooser_->getMinAddress() + 1);
 	const double column_count = (double)columnCount({});
 	return std::ceil(data_size / column_count);
 }
 
-int TracerModel::columnCount(const QModelIndex &parent) const
+int HexTableModel::columnCount(const QModelIndex &parent) const
 {
 	return 16 + show_ascii_;
 }
 
-QVariant TracerModel::data(const QModelIndex &index, int role) const
+QVariant HexTableModel::data(const QModelIndex &index, int role) const
 {
 	if (role == Qt::DisplayRole)
 	{
@@ -82,7 +82,7 @@ QVariant TracerModel::data(const QModelIndex &index, int role) const
 	return {};
 }
 
-QVariant TracerModel::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant HexTableModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
 	if (role == Qt::DisplayRole)
 	{
@@ -106,7 +106,7 @@ QVariant TracerModel::headerData(int section, Qt::Orientation orientation, int r
 	return QAbstractTableModel::headerData(section, orientation, role);
 }
 
-QString TracerModel::get_ascii_from_row(int row) const
+QString HexTableModel::get_ascii_from_row(int row) const
 {
 	QString ascii{};
 	QModelIndex index = createIndex(row, 0);
@@ -133,17 +133,17 @@ QString TracerModel::get_ascii_from_row(int row) const
 	return ascii;
 }
 
-size_t TracerModel::get_value_by_addr(size_t addr) const
+size_t HexTableModel::get_value_by_addr(size_t addr) const
 {
 	return provider_->getData(addr);
 }
 
-bool TracerModel::is_valid_addr(size_t addr) const
+bool HexTableModel::is_valid_addr(size_t addr) const
 {
 	return addr <= provider_->getMaxAddress() && addr >= provider_->getMinAddress();
 }
 
-QString TracerModel::to_hex(size_t number, TracerModel::HexMode hex_mode, int min_length) const
+QString HexTableModel::to_hex(size_t number, HexTableModel::HexMode hex_mode, int min_length) const
 {
 	// TODO: shitty
 	QString hex = hex_mode == HexMode::With0x ? "0x" : "";
@@ -155,7 +155,7 @@ QString TracerModel::to_hex(size_t number, TracerModel::HexMode hex_mode, int mi
 	return hex + num;
 }
 
-size_t TracerModel::index_to_address(const QModelIndex &index) const
+size_t HexTableModel::index_to_address(const QModelIndex &index) const
 {
 	const int row = index.row();
 	const int column = index.column();
@@ -163,12 +163,12 @@ size_t TracerModel::index_to_address(const QModelIndex &index) const
 	return get_first_cell_addr() + row * column_count + column;
 }
 
-size_t TracerModel::get_first_cell_addr() const
+size_t HexTableModel::get_first_cell_addr() const
 {
 	return size_t(std::floor((double)chooser_->getMinAddress() / 16.) * 16.);
 }
 
-bool TracerModel::is_ascii_info_index(const QModelIndex &index) const
+bool HexTableModel::is_ascii_info_index(const QModelIndex &index) const
 {
 	return show_ascii_ && index.column() == columnCount() - 1;
 }

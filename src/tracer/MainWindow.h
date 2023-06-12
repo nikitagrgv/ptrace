@@ -3,9 +3,9 @@
 #include "AddressSelector.h"
 #include "DataChooser.h"
 #include "DataProvider.h"
+#include "HexTableModel.h"
 #include "ProcessSelector.h"
 #include "Tracer.h"
-#include "TracerModel.h"
 
 #include <QAbstractTableModel>
 #include <QFontDatabase>
@@ -92,7 +92,7 @@ private:
 		connect(address_selector_, &AddressSelector::maxAddressChanged, chooser.get(),
 			[chooser = chooser.get(), this](size_t addr) { chooser->setMaxAddress(addr); });
 
-		model_ = std::make_unique<TracerModel>(std::move(provider), std::move(chooser), this);
+		model_ = std::make_unique<HexTableModel>(std::move(provider), std::move(chooser), this);
 		view_->setModel(model_.get());
 	}
 
@@ -101,7 +101,7 @@ private:
 	AddressSelector *address_selector_{};
 	ProcessSelector *process_selector_{};
 
-	std::unique_ptr<TracerModel> model_;
+	std::unique_ptr<HexTableModel> model_;
 	QTableView *view_{};
 };
 
