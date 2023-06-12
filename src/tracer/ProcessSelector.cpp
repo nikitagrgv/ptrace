@@ -2,6 +2,7 @@
 
 #include <QHBoxLayout>
 #include <QIntValidator>
+#include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
 
@@ -9,6 +10,9 @@ ProcessSelector::ProcessSelector(QWidget *parent)
 	: QWidget(parent)
 {
 	auto layout = new QHBoxLayout(this);
+
+	auto label = new QLabel("PID:", this);
+	layout->addWidget(label);
 
 	line_edit_ = new QLineEdit(this);
 	layout->addWidget(line_edit_);
