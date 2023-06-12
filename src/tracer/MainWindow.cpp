@@ -1,36 +1,30 @@
 #include "MainWindow.h"
 
+#include "TestRegionsProvider.h"
+
 TracerWidget::TracerWidget(QWidget *parent)
 	: QWidget(parent)
 {
 	auto layout = new QVBoxLayout{this};
 
+	// process select
 	process_selector_ = new ProcessSelector(this);
 	layout->addWidget(process_selector_);
 
-	class TestRegionsProvider : public RegionsProvider
-	{
-	public:
-		TestRegionsProvider(QObject *parent = nullptr)
-			: RegionsProvider(parent)
-		{}
-
-		void reload() {}
-
-		int getRegionsCount() const override { return 6; }
-		size_t getRegionBegin(int region) const override { return region * 0x1000; }
-		size_t getRegionEnd(int region) const override { return region * 0x1000 + 0x555; }
-
-	private:
-		QList<Region> regions_;
-	};
+	// region select
 	auto regions_provider = std::make_unique<TestRegionsProvider>();
+	regions_provider_ = regions_provider.get(); // TODO shitty
+
+	connect(process_selector_, &ProcessSelector::pidSelected, this, [this](int pid) {
+		std::cout << "rel pr : " << regions_provider_ << std::endl;
+		static_cast<TestRegionsProvider*>(regions_provider_)->reload(pid);
+		//		create_model(pid);
+	});
 
 	address_selector_ = new AddressSelector(std::move(regions_provider), this);
 	layout->addWidget(address_selector_);
 
-	connect(process_selector_, &ProcessSelector::pidSelected, this, &TracerWidget::create_model);
-
+	// hex view
 	view_ = new QTableView(this);
 	QFont font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
 	view_->setFont(font);

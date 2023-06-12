@@ -26,6 +26,8 @@ public:
 		: QAbstractListModel(parent)
 		, provider_(std::move(provider))
 	{
+		assert(provider_);
+
 		auto update_all = [this]() {
 			QModelIndex top_left = index(0, 0);
 			QModelIndex bottom_right = index(rowCount(), 0);

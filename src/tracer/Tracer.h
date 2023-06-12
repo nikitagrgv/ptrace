@@ -16,7 +16,7 @@
 using Regs = user_regs_struct;
 
 constexpr int REGS_COUNT = sizeof(Regs) / sizeof(unsigned long long int);
-inline const char *regName(int n);
+const char *regName(int n);
 
 union RegsUnion
 {
@@ -30,8 +30,8 @@ struct Region
 	size_t end{};
 };
 
-inline QString checkError();
-inline bool isSuccess();
+QString checkError();
+bool isSuccess();
 
 class Tracer
 {
@@ -51,6 +51,6 @@ private:
 };
 
 
-inline QString getMapsFilename(int pid);
+QString getMapsFilename(int pid);
 
-inline QList<Region> getRegions(int pid);
+QList<Region> getRegions(int pid);

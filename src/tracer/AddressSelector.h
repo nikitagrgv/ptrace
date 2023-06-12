@@ -12,7 +12,12 @@ class RegionsProvider : public QObject
 	Q_OBJECT
 
 public:
-	RegionsProvider(QObject *parent);
+	RegionsProvider(RegionsProvider &&) = delete;
+	RegionsProvider(const RegionsProvider &) = delete;
+	RegionsProvider &operator=(RegionsProvider &&) = delete;
+	RegionsProvider &operator=(const RegionsProvider &) = delete;
+
+	explicit RegionsProvider(QObject *parent);
 
 	virtual int getRegionsCount() const = 0;
 	virtual size_t getRegionBegin(int region) const = 0;

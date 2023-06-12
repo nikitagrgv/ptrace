@@ -18,6 +18,8 @@
 #include <cmath>
 #include <memory>
 
+class TestRegionsProvider;
+
 class TracerWidget : public QWidget
 {
 public:
@@ -30,6 +32,7 @@ private:
 private:
 	AddressSelector *address_selector_{};
 	ProcessSelector *process_selector_{};
+	RegionsProvider *regions_provider_{};
 
 	std::unique_ptr<HexTableModel> model_;
 	QTableView *view_{};
