@@ -39,11 +39,7 @@ AddressSelector::AddressSelector(QWidget *parent)
 	{
 		list_view_ = new QListView(this);
 		layout->addWidget(list_view_);
-//		list_view_->setMinimumHeight(0);
-//		list_view_->setMaximumHeight(20);
 		list_view_->setSizePolicy(QSizePolicy::Policy::MinimumExpanding, QSizePolicy::Policy::MinimumExpanding);
-		//		list_view_->setResizeMode(QListView::Fixed);
-		//		list_view_->setMaximumHeight(100);
 
 		auto model = new AddressListModel(this);
 		list_view_->setModel(model);

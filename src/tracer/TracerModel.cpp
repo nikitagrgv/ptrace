@@ -159,7 +159,8 @@ size_t TracerModel::index_to_address(const QModelIndex &index) const
 {
 	const int row = index.row();
 	const int column = index.column();
-	return get_first_cell_addr() + row * columnCount({}) + column;
+	const int column_count = columnCount() - show_ascii_;
+	return get_first_cell_addr() + row * column_count + column;
 }
 
 size_t TracerModel::get_first_cell_addr() const
@@ -169,5 +170,5 @@ size_t TracerModel::get_first_cell_addr() const
 
 bool TracerModel::is_ascii_info_index(const QModelIndex &index) const
 {
-	return show_ascii_ && index.column() == columnCount({}) - 1;
+	return show_ascii_ && index.column() == columnCount() - 1;
 }
