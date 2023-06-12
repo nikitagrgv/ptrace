@@ -1,4 +1,4 @@
-add_executable(target main.cpp)
+add_executable(target main.cpp ../tracer/DataChooser.h)
 
 set_target_properties(target
         PROPERTIES
