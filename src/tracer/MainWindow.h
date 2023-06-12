@@ -2,6 +2,7 @@
 
 #include "DataChooser.h"
 #include "DataProvider.h"
+#include "ProcessSelector.h"
 #include "Tracer.h"
 #include "TracerModel.h"
 
@@ -22,22 +23,25 @@ public:
 	TracerWidget(QWidget *parent = nullptr)
 		: QWidget(parent)
 	{
-		new QVBoxLayout{this};
+		auto layout = new QVBoxLayout{this};
 
-		create_pid_selector_widget();
+		process_selector_ = new ProcessSelector(this);
+		layout->addWidget(process_selector_);
 
-		auto button = new QPushButton("Hello world!", this);
-		layout()->addWidget(button);
-		button->resize(200, 100);
+		connect(process_selector_, &ProcessSelector::pidSelected, this,
+			&TracerWidget::create_model);
 
 		view_ = new QTableView(this);
 		QFont font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
 		view_->setFont(font);
 		view_->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
 		view_->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-		layout()->addWidget(view_);
+		layout->addWidget(view_);
+	}
 
-
+private:
+	void create_model(int pid)
+	{
 		class TestDataProvider : public DataProvider
 		{
 		public:
@@ -70,30 +74,15 @@ public:
 		};
 		auto chooser = std::make_unique<TestDataChooser>();
 
-		model_ = new TracerModel(std::move(provider), std::move(chooser), this);
-		view_->setModel(model_);
-
-
-		connect(button, &QPushButton::clicked, this, [this]() {
-			auto &chooser = static_cast<TestDataChooser &>(model_->getDataChooser());
-			auto &provider = static_cast<TestDataProvider &>(model_->getDataProvider());
-
-			chooser.setMaxAddress(chooser.getMaxAddress() + 23);
-			chooser.setMinAddress(chooser.getMinAddress() - 15);
-		});
+		model_ = std::make_unique<TracerModel>(std::move(provider), std::move(chooser), this);
+		view_->setModel(model_.get());
 	}
 
-private:
-	void create_pid_selector_widget()
-	{
-		auto pid_selector = new QWidget();
-		new QHBoxLayout(pid_selector);
-
-		layout()->addWidget(pid_selector);
-	}
 
 private:
-	TracerModel *model_{};
+	ProcessSelector *process_selector_{};
+
+	std::unique_ptr<TracerModel> model_;
 	QTableView *view_{};
 };
 

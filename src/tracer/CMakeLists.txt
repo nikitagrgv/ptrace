@@ -11,7 +11,7 @@ find_package(Qt5 COMPONENTS
         Widgets
         REQUIRED)
 
-add_executable(tracer main.cpp MainWindow.cpp MainWindow.h Tracer.cpp Tracer.h DataProvider.h DataProvider.cpp DataChooser.h DataChooser.cpp TracerModel.cpp TracerModel.h)
+add_executable(tracer main.cpp MainWindow.cpp MainWindow.h Tracer.cpp Tracer.h DataProvider.h DataProvider.cpp DataChooser.h DataChooser.cpp TracerModel.cpp TracerModel.h ProcessSelector.cpp ProcessSelector.h)
 
 target_link_libraries(tracer
         Qt5::Core
