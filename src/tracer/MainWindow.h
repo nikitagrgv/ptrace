@@ -41,6 +41,12 @@ public:
 		view_->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
 		view_->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
 		layout->addWidget(view_);
+
+		layout->setStretchFactor(process_selector_, 0);
+		layout->setStretchFactor(address_selector_, 0);
+		layout->setStretchFactor(view_,5);
+
+
 	}
 
 private:

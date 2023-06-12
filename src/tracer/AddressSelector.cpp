@@ -3,38 +3,80 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QListView>
 #include <QPushButton>
 
 #include <string>
+
+class AddressListModel : public QAbstractListModel
+{
+public:
+	AddressListModel(QObject *parent = nullptr)
+		: QAbstractListModel(parent)
+	{}
+
+	int rowCount(const QModelIndex &parent = QModelIndex()) const override
+	{
+		return 5;
+	}
+
+	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override
+	{
+		if (role == Qt::DisplayRole)
+		{
+			return index.row();
+		}
+
+		return {};
+	}
+
+};
 
 AddressSelector::AddressSelector(QWidget *parent)
 	: QWidget(parent)
 {
 	auto layout = new QHBoxLayout(this);
+	{
+		list_view_ = new QListView(this);
+		layout->addWidget(list_view_);
+//		list_view_->setMinimumHeight(0);
+//		list_view_->setMaximumHeight(20);
+		list_view_->setSizePolicy(QSizePolicy::Policy::MinimumExpanding, QSizePolicy::Policy::MinimumExpanding);
+		//		list_view_->setResizeMode(QListView::Fixed);
+		//		list_view_->setMaximumHeight(100);
+
+		auto model = new AddressListModel(this);
+		list_view_->setModel(model);
+	}
+
+	auto min_max_layout = new QVBoxLayout();
+	layout->addLayout(min_max_layout);
 
 	{
 		auto label_min = new QLabel("Min:", this);
-		layout->addWidget(label_min);
+		min_max_layout->addWidget(label_min);
 
 		line_edit_min_ = new QLineEdit(this);
-		layout->addWidget(line_edit_min_);
+		min_max_layout->addWidget(line_edit_min_);
 	}
 	{
 		auto label_max = new QLabel("Max:", this);
-		layout->addWidget(label_max);
+		min_max_layout->addWidget(label_max);
 
 		line_edit_max_ = new QLineEdit(this);
-		layout->addWidget(line_edit_max_);
+		min_max_layout->addWidget(line_edit_max_);
 	}
 	{
 		auto apply_button = new QPushButton("Select", this);
-		layout->addWidget(apply_button);
+		min_max_layout->addWidget(apply_button);
 
 		connect(apply_button, &QPushButton::clicked, this, [this]() {
 			emit minAddressChanged(getMinAddress());
 			emit maxAddressChanged(getMaxAddress());
 		});
 	}
+
+	setFixedHeight(min_max_layout->sizeHint().height());
 }
 
 size_t AddressSelector::getMinAddress() const
